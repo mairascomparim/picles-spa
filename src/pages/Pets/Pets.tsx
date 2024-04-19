@@ -4,17 +4,39 @@ import styles from './Pets.module.css'
 import { Card } from "../../components/common/Card";
 import { useQuery } from "@tanstack/react-query";
 import { getPets } from "../../services/pets/getPets";
+import { Skeleton } from "../../components/common/Skeleton";
+import { Pagination } from "../../components/common/Pagination/Pagination";
+import { useSearchParams } from "react-router-dom";
 
 export function Pets(){
+    const [searchParams, setSearchParams] = useSearchParams()
+
+    const urlParams = {
+        page: searchParams.get('page') ? Number(searchParams.get('page')) : 1,
+    }
+
     const { data , isLoading } = useQuery({
-        queryKey: ['get-pets'],
-        queryFn: () => getPets(),
+        queryKey: ['get-pets', urlParams],
+        queryFn: () => getPets(urlParams),
+        staleTime: 100
     })
+
+    function changePage(page: number){
+        setSearchParams((params) => {
+            params.set('page', String(page))
+            return params
+        })
+    }
 
     return (
     <Grid>
         <div className={styles.container}>
             <Header />
+            {
+                isLoading && (
+                    <Skeleton containerClassName={styles.skeleton} count={10} />
+                )
+            }
             <main className={styles.list}>
                 {data?.items?.map((pet) => (
                     <Card
@@ -25,6 +47,13 @@ export function Pets(){
                     />
                 ))}
             </main>
+            {data?.currentPage && (
+                <Pagination
+                    currentPage={data.currentPage}
+                    totalPages={data.totalPages}
+                    onPageChange={(number) => changePage(number)}
+                />
+            )}
         </div>
     </Grid>
   )
